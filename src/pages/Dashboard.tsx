@@ -10,8 +10,10 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { DirectionsCar, CheckCircle, Cancel, TrendingUp, Refresh } from "@mui/icons-material";
+import { DirectionsCar, CheckCircle, Cancel, TrendingUp, Refresh, Search } from "@mui/icons-material";
 import { useTrips } from "../hooks/useTrips";
 import { fetchTrips } from "../services/api";
 import { Trip } from "../data/trips";
@@ -20,6 +22,7 @@ import StatusFilter, { FilterValue } from "../components/StatusFilter";
 
 export default function Dashboard() {
   const [filter, setFilter] = useState<FilterValue>("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [allTripsForStats, setAllTripsForStats] = useState<Trip[]>([]);
   const [statsLoaded, setStatsLoaded] = useState(false);
   const theme = useTheme();
@@ -44,8 +47,19 @@ export default function Dashboard() {
     }
   }, [statsLoaded]);
 
-  // No need for client-side filtering since API handles it
-  const filteredTrips = trips;
+  // Filter trips by search query (vehicle, source, or destination)
+  const filteredTrips = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return trips;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return trips.filter(
+      (trip) =>
+        trip.vehicle.toLowerCase().includes(query) ||
+        trip.source.toLowerCase().includes(query) ||
+        trip.destination.toLowerCase().includes(query)
+    );
+  }, [trips, searchQuery]);
 
   // Calculate stats from all trips (not filtered)
   const stats = useMemo(() => {
@@ -270,11 +284,61 @@ export default function Dashboard() {
             // mb: 0,
           }}
         >
-          <Box textAlign="center">
-            <Typography id="filter-trips-heading" variant="h6" fontWeight="600" mb={2}>
+          <Box>
+            <Typography id="filter-trips-heading" variant="h6" fontWeight="600" mb={2} textAlign="center">
               Filter Trips
             </Typography>
-            <StatusFilter value={filter} onChange={setFilter} />
+            
+            {/* Filter Row: Status Buttons on Left, Search on Right */}
+            <Box
+              display="flex"
+              flexDirection={{ xs: "column", md: "row" }}
+              alignItems={{ xs: "stretch", md: "center" }}
+              justifyContent="space-between"
+              gap={2}
+              mb={3}
+            >
+              {/* Status Filter Buttons - Left Side */}
+              <Box
+                display="flex"
+                justifyContent={{ xs: "center", md: "flex-start" }}
+                flex={1}
+              >
+                <StatusFilter value={filter} onChange={setFilter} />
+              </Box>
+              
+              {/* Search Field - Right Side */}
+              <Box sx={{ maxWidth: { xs: "100%", md: 400 }, width: "100%" }}>
+                <TextField
+                  id="search-trips"
+                  fullWidth
+                  placeholder="Search by vehicle, source, or destination..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                      backgroundColor: "rgba(255, 255, 255, 0.9)",
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 255, 255, 1)",
+                      },
+                      "&.Mui-focused": {
+                        backgroundColor: "rgba(255, 255, 255, 1)",
+                      },
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
           </Box>
           <Box>
             <Typography id="trip-details-heading" variant="h6" fontWeight="600" textAlign={"center"}>
